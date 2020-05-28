@@ -2,17 +2,29 @@
 from requests import get
 from bs4 import BeautifulSoup
 
-# Notify function
-from win10toast import ToastNotifier
+# Read configuration file
+from configparser import ConfigParser
 
 # Timeloop Wrapper
 from timeloop import Timeloop
 from datetime import timedelta
 
 
-class Win10RouterStatus:
+class DLink2730URouterStatus:
 
     def __init__ ( self ):
+
+        # Parse config.ini
+        self.CONFIG_PATH = "./config.ini"
+
+        self.config = ConfigParser()
+        self.config.read(self.CONFIG_PATH)
+
+        self.configuration = self.config.sections()[0]
+
+        self.platform = self.config.get(self.configuration, 'platform').lower()
+        self.router_user = self.config.get(self.configuration, 'router_user')
+        self.router_pass = self.config.get(self.configuration, 'router_pass')
 
         # Reference Map : ( status , color style - console output , router string* )
         self.connection_status = (
@@ -28,8 +40,27 @@ class Win10RouterStatus:
         self.buffer = self.ignore # Initialize container to ignore default code
 
         self.duration = 3 # Notification and timeloop
-        self.notifier = ToastNotifier()
 
+        self.ICON_PATH = "./wlan.ico"
+
+        # Platform-specific notifier:
+
+        if self.platform == "windows":
+
+            # Import 'Windows 10' Toast module:
+            from win10toast import ToastNotifier
+
+            # Instantiate
+            self.notifier_windows = ToastNotifier()
+
+        elif self.platform == "linux":
+
+            # Import 'Linux Desktop Notification' module (Tested on Debian 10 Buster):
+            from notify2 import init, Notification
+
+            # Instantiate
+            self.notifier_linux = init( "DLink-2730U Router Connection Status Notifier" )
+            self.n = Notification( "Connection Status" , message = "Daemon Running" , icon = self.ICON_PATH )
 
     # Todo: Fetch and parse router page
     # Return: Connection code
@@ -37,7 +68,7 @@ class Win10RouterStatus:
 
         try:
             status_page = get( "http://192.168.1.1/status.htm" ,
-                            auth = ("<router_username>" , "<router_password>" )
+                            auth = ( self.router_user , self.router_pass )
                             ).content
         # Disconnected
         except OSError:
@@ -60,10 +91,15 @@ class Win10RouterStatus:
 
         print( f"{ self.connection_status[ index ][ 1 ] }{ self.connection_status[ index ][ 0 ] }" , self.color_reset )
 
-        self.notifier.show_toast ( title = "" , msg = f"Connection Status: { self.connection_status[ index ][ 0 ] }" , duration = self.duration , icon_path = "wlan.ico" ) 
+        if self.platform == "windows":
+            self.notifier_windows.show_toast ( title = "" , msg = f"Connection Status: { self.connection_status[ index ][ 0 ] }" , duration = self.duration , icon_path = self.ICON_PATH ) 
+
+        elif self.platform == "linux":
+            self.n.update(f"Connection Status: { self.connection_status[ index ][ 0 ] }", icon = self.ICON_PATH)
+            self.n.show()
 
 
-router = Win10RouterStatus()
+router = DLink2730URouterStatus()
 
 # Todo: Start timeloop
 timeloop = Timeloop()
