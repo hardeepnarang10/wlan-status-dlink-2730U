@@ -15,5 +15,5 @@ soupsieve==2.0.1
 timeloop==1.0.2
 toml==0.10.1
 typed-ast==1.4.1
-urllib3==1.25.9
+urllib3==1.26.5
 wrapt==1.12.1
