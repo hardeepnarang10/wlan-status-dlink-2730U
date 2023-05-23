@@ -9,7 +9,7 @@ lazy-object-proxy==1.4.3
 mccabe==0.6.1
 notify2==0.3.1
 pylint==2.5.2
-requests==2.23.0
+requests==2.31.0
 six==1.15.0
 soupsieve==2.0.1
 timeloop==1.0.2
